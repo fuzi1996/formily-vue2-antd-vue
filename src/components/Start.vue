@@ -1,87 +1,54 @@
 <template>
   <FormProvider :form="form">
-    <Field
-      name="name"
-      title="Name"
-      required
-      :decorator="[FormItem]"
-      :component="[Input, { placeholder:'Please Input' }]"
-    />
-    <Field
-      name="password"
-      title="Password"
-      required
-      :decorator="[FormItem]"
-      :component="[Input, { type: 'password', placeholder:'Please Input' }]"
-      :reactions="createPasswordEqualValidate('confirm_password')"
-    />
-    <Field
-      name="confirm_password"
-      title="Confirm Password"
-      required
-      :decorator="[FormItem]"
-      :component="[Input, { type: 'password', placeholder:'Please Input' }]"
-      :reactions="createPasswordEqualValidate('password')"
-    />
-    <FormConsumer>
-      <template #default="{ form }">
-        <div style="white-space: pre;">{{ JSON.stringify(form.values, null, 2) }}</div>
+    <ObjectField name="object">
+      <template #default="{ field }">
+        <div
+          v-for="key in Object.keys(field.value || {})"
+          :key="key"
+          :style="{ marginBottom: '10px' }"
+        >
+          <Space>
+            <Field :name="key" :component="[Input, { placeholder: key }]" />
+            <Button @click="field.removeProperty(key)"> Remove </Button>
+          </Space>
+        </div>
+        <Space>
+          <Field
+            name="propertyName"
+            basePath=""
+            required
+            :component="[Input, { placeholder: 'Property Name' }]"
+          />
+          <Button @click="addPropertyToField(field)"> Add </Button>
+        </Space>
       </template>
-    </FormConsumer>
+    </ObjectField>
   </FormProvider>
 </template>
 
 <script>
-import { Form, Input } from 'ant-design-vue'
-import { createForm, isVoidField, setValidateLanguage } from '@formily/core'
-import {
-  FormProvider,
-  FormConsumer,
-  Field,
-  connect,
-  mapProps,
-} from '@formily/vue'
-
-setValidateLanguage('en')
-
-const FormItem = connect(
-  Form.Item,
-  mapProps(
-    { validateStatus: true, title: 'label', required: true },
-    (props, field) => {
-      return {
-        help: !isVoidField(field) ? (field.errors.length ? field.errors : undefined) : undefined,
-        extra: field.description,
-      }
-    }
-  )
-)
-
+import { Input, Space, Button } from 'ant-design-vue'
+import { createForm } from '@formily/core'
+import { FormProvider, ObjectField, Field } from '@formily/vue'
+import 'ant-design-vue/dist/antd.css'
+// https://vue.formilyjs.org/api/components/object-field.html#%E7%94%A8%E4%BE%8B
 export default {
-  components: {
-    FormProvider,
-    FormConsumer,
-    Field
-  },
+  components: { FormProvider, ObjectField, Field, Space, Button },
   data() {
-    const form = createForm({ validateFirst: true })
-    const createPasswordEqualValidate = (equalName) => (field) => {
-      if (
-        form.values.confirm_password &&
-        field.value &&
-        form.values[equalName] !== field.value
-      ) {
-        field.errors = ['Password does not match Confirm Password.']
-      } else {
-        field.errors = []
-      }
-    }
     return {
-      FormItem,
       Input,
-      form,
-      createPasswordEqualValidate
+      form: createForm(),
     }
-  }
+  },
+  methods: {
+    addPropertyToField(field) {
+      console.log('values',this.form.values)
+      const name = this.form.values.propertyName
+      if (name && !this.form.existValuesIn(`object.${name}`)) {
+        field.addProperty(name, '')
+        this.form.deleteValuesIn('propertyName')
+      }
+    },
+  },
 }
 </script>
